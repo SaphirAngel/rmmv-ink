@@ -194,6 +194,26 @@ IMPORTANT: When translating, the structure of the Ink script must stay exactly t
 If this can't be avoided, you must not allow the player to change languages after the game starts. This includes changing language then loading a saved game from a different language!
 
  */
+
+/*
+COMMANDS
+
+Duration can be set with ds:duration_in_seconds or df:duration_in_frames
+Coord can be set with x:xCoord y:yCoord or xy:[xCoord, yCoord]
+
+== TIME COMMANDS
+> wait ds:duration_in_seconds
+
+== VISUAL EFFECT COMMANDS
+> tint tone:[red,green,blue,grey] ds:duration_in_seconds (wait)
+
+== MOVE COMMANDS
+> locate name:event_name xy:[xCoord, yCoord]
+> swap name:event_name_from nameTo:event_name_to
+#Yanfly move command
+> move name:event_name (wait) (see yanfly : Move Route Core for commands)
+
+ */
 var Imported     = Imported || {};
 Imported.LWP_Ink = true;
 
