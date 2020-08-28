@@ -961,8 +961,8 @@ Imported.LWP_Ink = true;
 
     LWP_InkManager._getDuration = function (parameters) {
         var durationInFrame = 0;
-        if (parameters.has('s')) {
-            durationInFrame = parseInt(parseFloat(parameters.has('ds')) * 60);
+        if (parameters.has('ds')) {
+            durationInFrame = parseInt(parseFloat(parameters.get('ds')) * 60);
         } else if (parameters.has('df')) {
             durationInFrame = parseInt(parameters.get('df'));
         }
