@@ -194,26 +194,6 @@ IMPORTANT: When translating, the structure of the Ink script must stay exactly t
 If this can't be avoided, you must not allow the player to change languages after the game starts. This includes changing language then loading a saved game from a different language!
 
  */
-
-/*
-COMMANDS
-
-Duration can be set with ds:duration_in_seconds or df:duration_in_frames
-Coord can be set with x:xCoord y:yCoord or xy:[xCoord, yCoord]
-
-== TIME COMMANDS
-> wait ds:duration_in_seconds
-
-== VISUAL EFFECT COMMANDS
-> tint tone:[red,green,blue,grey] ds:duration_in_seconds (wait)
-
-== MOVE COMMANDS
-> locate name:event_name xy:[xCoord, yCoord]
-> swap name:event_name_from nameTo:event_name_to
-#Yanfly move command
-> move name:event_name (wait) (see yanfly : Move Route Core for commands)
-
- */
 var Imported     = Imported || {};
 Imported.LWP_Ink = true;
 
@@ -502,21 +482,25 @@ Imported.LWP_Ink = true;
             var textColor, fontSize, fontName;
 
             if (this._currentCharacter) {
-                textColor = this._getParameters(this._currentCharacter, 'textColor', 'tc');
-                fontSize  = this._getParameters(this._currentCharacter, 'fontSize', 'fs');
-                fontName  = this._getParameters(this._currentCharacter, 'fontName', 'fn');
+                textColor = getParameters(this._currentCharacter, 'textColor', 'tc');
+                fontSize  = getParameters(this._currentCharacter, 'fontSize', 'fs');
+                fontName  = getParameters(this._currentCharacter, 'fontName', 'fn');
             }
 
+            console.log(textColor);
+            console.log(fontSize);
+            console.log(textColor);
+
             if (textColor) {
-                content = '\\c[' + this._currentCharacter.get('textColor') + ']' + content;
+                content = '\\c[' + textColor + ']' + content;
             }
 
             if (fontSize) {
-                content = '\\fs[' + this._currentCharacter.get('fontSize') + ']' + content;
+                content = '\\fs[' + fontSize + ']' + content;
             }
 
             if (fontName) {
-                content = '\\fn[' + this._currentCharacter.get('fontName') + ']' + content;
+                content = '\\fn[' + fontName + ']' + content;
             }
 
             if (displayData.nameBox) {
@@ -709,7 +693,9 @@ Imported.LWP_Ink = true;
                  */
                 var dialogData = content.match(dialogRegexPattern);
                 if (dialogData !== null) {
-                    this._currentCharacter = this._findCharacterByName(dialogData.groups['character']) || this._findCharacterById(dialogData.groups['character'])
+                    this._currentCharacter = findCharacterByName(dialogData.groups['character']) || findCharacterById(dialogData.groups['character']);
+                    console.log('CURRENT CHAR');
+                    console.log(this._currentCharacter);
                     this.showContent(dialogData.groups['dialog'], tags);
                     return tags;
                 }
@@ -876,20 +862,15 @@ Imported.LWP_Ink = true;
         this._childInterpreter.setup(list, 0);
     }
 
-//
-// Picture
-    LWP_InkManager.showPicture = function (pictureName) {
-        $gameScreen.showPicture(1, pictureName, 0, 0, 0, 100, 100, 255, 0)
-    }
 
-//////////////////////////////////////////////////////////////////////////
-// Commands private method
-//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+// commands - utility functions. Not exposed externally.
+//////////////////////////////////////////////////////////////////
 
     /*
      * Get one paramater value with several names possible
      */
-    LWP_InkManager._getParameters = function (parameters, ...parametersName) {
+    let getParameters = function (parameters, ...parametersName) {
         var parameterValue = false;
         var parameterName  = null;
         for (parameterPosition in parametersName) {
@@ -903,9 +884,10 @@ Imported.LWP_Ink = true;
         }
 
         return parameterValue;
-    }
+    }.bind(LWP_InkManager);
 
-    LWP_InkManager._findCharacterByName = function (characterName) {
+    let findCharacterByName = function (characterName) {
+        console.log(this._characters);
         var characterData = this._characters.filter(character => {
             if (character == null || !character.has('name')) {
                 return false;
@@ -915,9 +897,9 @@ Imported.LWP_Ink = true;
         });
 
         return characterData[0] || null;
-    }
+    }.bind(LWP_InkManager);
 
-    LWP_InkManager._findCharacterById = function (characterId) {
+    let findCharacterById = function (characterId) {
         var characterData = this._characters.filter(character => {
             if (character == null || !character.has('id')) {
                 return false;
@@ -927,9 +909,9 @@ Imported.LWP_Ink = true;
         });
 
         return characterData[0] || null;
-    }
+    }.bind(LWP_InkManager);
 
-    LWP_InkManager._getEventIDByName = function (eventName) {
+    let getEventIDByName = function (eventName) {
         if (eventName == 'PLAYER') {
             return -1;
         }
@@ -943,23 +925,23 @@ Imported.LWP_Ink = true;
         });
 
         return validEvent[0].id;
-    }
+    }.bind(LWP_InkManager);
 
-    LWP_InkManager._getEventID = function (parameters, idParamName, nameParamName) {
+    let getEventID = function (parameters, idParamName, nameParamName) {
         var eventID = 0;
 
         if (parameters.has(idParamName || 'id')) {
             eventID = parameters.get(idParamName || 'id');
         } else if (parameters.has(nameParamName)) {
-            eventID = this._getEventIDByName(parameters.get(nameParamName || 'name'));
-        } else if (this._getParameters(parameters, 'name', 'n')) {
-            eventID = this._getEventIDByName(this._getParameters(parameters, 'name', 'n'));
+            eventID = getEventIDByName(parameters.get(nameParamName || 'name'));
+        } else if (getParameters(parameters, 'name', 'n')) {
+            eventID = getEventIDByName(getParameters(parameters, 'name', 'n'));
         }
 
         return eventID;
-    }
+    }.bind(LWP_InkManager);
 
-    LWP_InkManager._getCoord = function (parameters) {
+    let getCoord = function (parameters) {
         var coord = {x: 0, y: 0};
 
         if (parameters.has('xy')) {
@@ -977,10 +959,10 @@ Imported.LWP_Ink = true;
         }
 
         return coord;
-    }
+    }.bind(LWP_InkManager);
 
-    LWP_InkManager._getDuration = function (parameters) {
-        var durationInFrame = 0;
+    let getDuration = function (parameters) {
+        var durationInFrame = 60;
         if (parameters.has('ds')) {
             durationInFrame = parseInt(parseFloat(parameters.get('ds')) * 60);
         } else if (parameters.has('df')) {
@@ -988,11 +970,11 @@ Imported.LWP_Ink = true;
         }
 
         return durationInFrame;
-    }
+    }.bind(LWP_InkManager);
 
-    LWP_InkManager._wait = function (durationInFrame) {
+    let wait = function (durationInFrame) {
         this._waitCount = durationInFrame;
-    }
+    }.bind(LWP_InkManager);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1003,8 +985,8 @@ Imported.LWP_Ink = true;
 //----------------------------------------------------
 // Moving event
     LWP_InkManager.move = function (parameters, actions) {
-        var wait          = this._getParameters(parameters, 'wait', 'w');
-        var targetEventID = this._getEventID(parameters);
+        var waitEnd       = getParameters(parameters, 'wait', 'w');
+        var targetEventID = getEventID(parameters);
 
         let eventToMove = null;
         if (targetEventID == -1) {
@@ -1034,7 +1016,7 @@ Imported.LWP_Ink = true;
         $gameMap.refreshIfNeeded();
         $gameMap._interpreter._character = eventToMove;
         eventToMove.forceMoveRoute(MVActions);
-        if (wait) {
+        if (waitEnd) {
             this._internalWaitMode = "route";
         }
     }
@@ -1042,8 +1024,8 @@ Imported.LWP_Ink = true;
 //----------------------------------------------------
 // Locate event
     LWP_InkManager.locate = function (parameters, tags) {
-        var targetEventID    = this._getEventID(parameters);
-        var destinationCoord = this._getCoord(parameters);
+        var targetEventID    = getEventID(parameters);
+        var destinationCoord = getCoord(parameters);
         var character        = $gameMap._interpreter.character(targetEventID);
         if (character) {
             character.locate(destinationCoord.x, destinationCoord.y);
@@ -1057,8 +1039,8 @@ Imported.LWP_Ink = true;
 //----------------------------------------------------
 // Wait event
     LWP_InkManager.wait = function (parameters, tags) {
-        var durationInFrame = this._getDuration(parameters);
-        this._wait(durationInFrame);
+        var durationInFrame = getDuration(parameters);
+        wait(durationInFrame);
     }
 
     LWP_InkManager.swap = function (parameters, tags) {
@@ -1078,27 +1060,68 @@ Imported.LWP_Ink = true;
 //----------------------------------------------------
 // Tint screen event
     LWP_InkManager.tint = function (parameters, tags) {
-        var durationInFrame = this._getDuration(parameters);
-        var tone            = this._getParameters(parameters, 'tone', 't');
-        var wait            = this._getParameters(parameters, 'wait', 'w');
+        var durationInFrame = getDuration(parameters);
+        var tone            = getParameters(parameters, 'tone', 't');
+        var waitEnd         = getParameters(parameters, 'wait', 'w');
 
         $gameScreen.startTint(tone, durationInFrame);
-        if (wait) {
-            this._wait(durationInFrame);
+        if (waitEnd) {
+            wait(durationInFrame);
         }
     }
+
+
+//
+// Pictures
+    LWP_InkManager.show_picture = function (parameters) {
+        var pictureID = parseInt(parameters.get('id'));
+        var name      = getParameters(parameters, 'name', 'n');
+        var origin    = parseInt(getParameters(parameters, 'origin', 'o') || 0);
+        var xy        = getCoord(parameters);
+        var scaleXY   = getParameters(parameters, 'scale_xy', 'sxy') || [100, 100];
+        var opacity   = parseInt(getParameters(parameters, 'opacity', 'op') || 255);
+        var blendMode = getParameters(parameters, 'blend_mode', 'bm') || 0;
+
+        $gameScreen.showPicture(pictureID, name, origin, xy.x, xy.y, scaleXY[0], scaleXY[1], opacity, blendMode);
+    }
+    LWP_InkManager.pic          = LWP_InkManager.show_picture;
+
+    LWP_InkManager.move_picture = function (parameters) {
+        var pictureID       = parseInt(parameters.get('id'));
+        var origin          = parseInt(getParameters(parameters, 'origin', 'o') || 0);
+        var xy              = getCoord(parameters);
+        var scaleXY         = getParameters(parameters, 'scale_xy', 'sxy') || [100, 100];
+        var opacity         = parseInt(getParameters(parameters, 'opacity', 'op') || 255);
+        var blendMode       = getParameters(parameters, 'blend_mode', 'bm') || 0;
+        var waitEnd         = getParameters(parameters, 'wait', 'w');
+        var durationInFrame = getDuration(parameters);
+
+        console.log("move_picture : " + durationInFrame);
+        $gameScreen.movePicture(pictureID, origin, xy.x, xy.y, scaleXY[0], scaleXY[1], opacity, blendMode, durationInFrame);
+
+        if (waitEnd) {
+            wait(durationInFrame);
+        }
+    }
+    LWP_InkManager.mpic         = LWP_InkManager.move_picture;
+
+    LWP_InkManager.delete_picture = function (parameters) {
+        var pictureID = parseInt(parameters.get('id'));
+        $gameScreen.erasePicture(pictureID);
+    }
+    LWP_InkManager.dpic           = LWP_InkManager.delete_picture;
+
 
 //////////////////////////////////////////////////////////////////////////
 // Commands : Custom commands
 //////////////////////////////////////////////////////////////////////////
 
-
 //----------------------------------------------------
 // Character configuration
     LWP_InkManager.character = function (parameters, tags) {
+        console.log(this._characters);
         this._characters.push(parameters);
     }
-
 
 //----------------------------------------------------
 // battle
