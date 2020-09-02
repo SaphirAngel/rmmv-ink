@@ -611,6 +611,7 @@ Imported.LWP_Ink = true;
                 value = 1;
             } else {
                 try {
+                    console.log('JSON parse :' + matches.groups['value'].trim());
                     value = JSON.parse(matches.groups['value'].trim());
                 } catch (e) {
                     value = matches.groups['value'].trim();
@@ -1070,6 +1071,36 @@ Imported.LWP_Ink = true;
         }
     }
 
+    /*
+     * Preload composite image for later usage with simple command
+     * > pic id:1 n:name (exemple)
+     */
+    ImageManager.reserveCompositeBitmap = function (name, compositeData, hue, reservationId) {
+        var loadedPromises = [];
+        var bitmaps        = [];
+
+        for (var picturePosition in compositeData.pictureData) {
+            var currentPictureData = compositeData.pictureData[picturePosition];
+            var currentBitmap      = ImageManager.loadPicture(currentPictureData.path);
+            bitmaps.push(currentBitmap);
+            var loadedPromise = new Promise((resolve) => {
+                currentBitmap.addLoadListener(() => {
+                    resolve();
+                });
+            });
+            loadedPromises.push(loadedPromise);
+        }
+
+        Promise.all(loadedPromises).then(() => {
+            var bitmap = new Bitmap(compositeData.width, compositeData.height);
+            for (var bitmapPosition in bitmaps) {
+                var currentPictureData = compositeData.pictureData[bitmapPosition];
+                var currentBitmap      = bitmaps[bitmapPosition];
+                bitmap.bltImage(currentBitmap, 0, 0, currentBitmap.width, currentBitmap.height, currentPictureData.dx, currentPictureData.dy);
+            }
+            this._imageCache.reserve(this._generateCacheKey(name, hue), bitmap, reservationId);
+        });
+    };
 
 //
 // Pictures
@@ -1111,10 +1142,43 @@ Imported.LWP_Ink = true;
     }
     LWP_InkManager.dpic           = LWP_InkManager.delete_picture;
 
+    LWP_InkManager.reserve_composite_picture = function (parameters, pictures) {
+        var compositeData = {
+            "width": 0,
+            "height": 0,
+            "pictureData": []
+        };
+        var pictureSize   = getParameters(parameters, 'size', 's');
+        var pictureName   = getParameters(parameters, 'name', 'n');
+        var hue           = 0;
+
+        compositeData.width  = pictureSize[0];
+        compositeData.height = pictureSize[1];
+        for (var picture of pictures) {
+            var detailsPicture = picture.trim().split(',');
+            compositeData.pictureData.push({
+                "dx": parseInt(detailsPicture[0].trim()),
+                "dy": parseInt(detailsPicture[1].trim()),
+                "path": detailsPicture[2].trim(),
+            });
+        }
+
+        ImageManager.reserveCompositeBitmap('img/pictures/' + pictureName + '.png', compositeData, hue || 0);
+        this._internalWaitMode = "image";
+    }
+    LWP_InkManager.rcpic                     = LWP_InkManager.reserve_composite_picture;
+
+    LWP_InkManager.reserve_picture = function (parameters) {
+        var pictureName        = parameters.get('n');
+        var bitmap             = ImageManager.reservePicture(pictureName);
+        this._internalWaitMode = "image";
+    }
+    LWP_InkManager.rpic            = LWP_InkManager.reserve_picture;
 
 //////////////////////////////////////////////////////////////////////////
 // Commands : Custom commands
 //////////////////////////////////////////////////////////////////////////
+
 
 //----------------------------------------------------
 // Character configuration
@@ -1122,6 +1186,7 @@ Imported.LWP_Ink = true;
         console.log(this._characters);
         this._characters.push(parameters);
     }
+
 
 //----------------------------------------------------
 // battle
